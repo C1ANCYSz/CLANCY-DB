@@ -1,24 +1,24 @@
 # ClancyDB - Lightweight JSON Database
 
-ClancyDB is a lightweight file-based NoSQL database inspired by MongoDB. It provides simple data storage, schema validation, and aggregation pipeline capabilities using JSON files.
+ClancyDB is a lightweight, file-based NoSQL database inspired by MongoDB. It provides simple data storage, schema validation, and an aggregation pipeline using JSON files.
 
 ## Features
 - **Lightweight & File-Based**: Stores data in JSON format.
-- **Collections & Models**: Organize data into collections and define schemas.
+- **Collections & Models**: Organize data with schemas.
 - **Indexing**: Supports basic indexing for faster queries.
-- **Aggregation Pipeline**: Implements MongoDB-like aggregation operators.
-- **Schema Validation**: Uses Joi for field validation.
+- **Aggregation Pipeline**: MongoDB-like query operators.
+- **Schema Validation**: Built-in Joi validation.
 
 ## Installation
 ```sh
-npm install fs-extra lodash async-lock joi
+npm install clancydb
 ```
 
 ## Usage
 ### Initialize Database
 ```javascript
-const DB = require('./db');
-const db = new DB('data.json');
+const ClancyDB = require('clancydb');
+const db = new ClancyDB('data.json');
 ```
 
 ### Define a Model
@@ -49,15 +49,14 @@ const results = userModel.aggregate([
 console.log(results);
 ```
 
-## Aggregation Pipeline Operators
-- `$match`: Filters documents based on conditions.
-- `$group`: Groups data and performs aggregations.
-- `$sort`: Sorts documents by fields.
-- `$limit`: Limits the number of results.
-- `$skip`: Skips a specified number of documents.
-- `$project`: Selects specific fields.
-- `$unwind`: Expands array fields into separate documents.
-- `$lookup`: Performs simple joins between collections.
-- `$count`: Counts documents in the pipeline.
-
+## Aggregation Operators
+- `$match` - Filter documents.
+- `$group` - Group data and perform aggregations.
+- `$sort` - Sort documents.
+- `$limit` - Limit the number of results.
+- `$skip` - Skip documents.
+- `$project` - Select specific fields.
+- `$unwind` - Expand array fields.
+- `$lookup` - Join collections.
+- `$count` - Count documents.
 

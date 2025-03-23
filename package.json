@@ -1,12 +1,30 @@
 {
-  "name": "notdb",
+  "name": "clancydb",
   "version": "1.0.0",
   "main": "db.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+  "database",
+  "nosql",
+  "json-database",
+  "lightweight-db",
+  "file-based-db",
+  "mongodb-like",
+  "aggregation",
+  "schema-validation",
+  "local-db",
+  "embedded-database",
+  "async-lock",
+  "fs-extra",
+  "lodash",
+  "joi",
+  "nodejs-database"
+]
+  ,
+  "author": "Clancy",
+ 
   "license": "ISC",
   "description": "",
   "dependencies": {
