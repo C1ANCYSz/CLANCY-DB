@@ -1,0 +1,58 @@
+{
+  "users": [
+    {
+      "name": "Alice",
+      "city": "New York",
+      "age": 25
+    },
+    {
+      "name": "Bob",
+      "city": "Los Angeles",
+      "age": 30
+    },
+    {
+      "name": "Charlie",
+      "city": "Chicago",
+      "age": 35
+    },
+    {
+      "name": "David",
+      "city": "Houston",
+      "age": 40
+    },
+    {
+      "name": "Eve",
+      "city": "Phoenix",
+      "age": 45
+    },
+    {
+      "name": "Frank",
+      "city": "Philadelphia",
+      "age": 50
+    },
+    {
+      "name": "Grace",
+      "city": "San Antonio",
+      "age": 55
+    },
+    {
+      "name": "Heidi",
+      "city": "San Diego",
+      "age": 60
+    },
+    {
+      "name": "Ivan",
+      "city": "Dallas",
+      "age": 65
+    },
+    {
+      "name": "Judy",
+      "city": " ose",
+      "age": 70
+    },{
+      "name": "Clancy",
+      "city": "San Jose",
+      "age": 70
+    }
+  ]
+}
