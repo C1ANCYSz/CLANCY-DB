@@ -74,14 +74,141 @@ class Collection {
     }
 
     find(query = {}) {
-        const indexedField = Object.keys(query).find(field => this.indexes[field]);
-        if (indexedField) {
-            return this.indexes[indexedField][query[indexedField]] || [];
-        }
-        return _.filter(this.db.data[this.name], query);
+        const results = this.db.data[this.name].filter(doc => {
+            for (let [key, condition] of Object.entries(query)) {
+                if (typeof condition === 'object' && !Array.isArray(condition)) {
+                    for (let [op, value] of Object.entries(condition)) {
+                        switch (op) {
+                            case '$gte':
+                                if (!(doc[key] >= value)) return false;
+                                break;
+                            case '$lte':
+                                if (!(doc[key] <= value)) return false;
+                                break;
+                            case '$gt':
+                                if (!(doc[key] > value)) return false;
+                                break;
+                            case '$lt':
+                                if (!(doc[key] < value)) return false;
+                                break;
+                            case '$eq':
+                                if (!(doc[key] === value)) return false;
+                                break;
+                            case '$ne':
+                                if (!(doc[key] !== value)) return false;
+                                break;
+                            case '$in':
+                                if (!value.includes(doc[key])) return false;
+                                break;
+                            case '$nin':
+                                if (value.includes(doc[key])) return false;
+                                break;
+                            case '$regex':
+                                if (!new RegExp(value).test(doc[key])) return false;
+                                break;
+                            default:
+                                throw new Error(`Unsupported operator: ${op}`);
+                        }
+                    }
+                } else {
+                    if (doc[key] !== condition) return false;
+                }
+            }
+            return true;
+        });
+    
+        return {
+            data: results,
+            update: (updates) => {
+                let updatedCount = 0;
+                this.db.data[this.name] = this.db.data[this.name].map(doc => {
+                    if (results.includes(doc)) {
+                        updatedCount++;
+                        return { ...doc, ...updates };
+                    }
+                    return doc;
+                });
+    
+                if (updatedCount > 0) {
+                    this.db._saveData();
+                }
+    
+                return { matchedCount: results.length, modifiedCount: updatedCount };
+            }
+        };
+    }
+    
+    insert(doc) {
+        this.db.data[this.name].push(doc);
+        this.db._saveData();
+        return doc;
     }
 
-    // Aggregation pipeline
+    update(query, update, options = { runValidators: true }) {
+        let updatedCount = 0;
+        this.db.data[this.name] = this.db.data[this.name].map(doc => {
+            if (_.isMatch(doc, query)) {
+                updatedCount++;
+                return { ...doc, ...update };
+            }
+            return doc;
+        });
+        this.db._saveData();
+        return { matchedCount: updatedCount, modifiedCount: updatedCount };
+    }
+
+    delete(query = {}) {
+        const initialLength = this.db.data[this.name].length;
+        this.db.data[this.name] = this.db.data[this.name].filter(doc => {
+            for (let [key, condition] of Object.entries(query)) {
+                if (typeof condition === 'object' && !Array.isArray(condition)) {
+                    for (let [op, value] of Object.entries(condition)) {
+                        switch (op) {
+                            case '$gte':
+                                if (doc[key] >= value) return false;
+                                break;
+                            case '$lte':
+                                if (doc[key] <= value) return false;
+                                break;
+                            case '$gt':
+                                if (doc[key] > value) return false;
+                                break;
+                            case '$lt':
+                                if (doc[key] < value) return false;
+                                break;
+                            case '$eq':
+                                if (doc[key] === value) return false;
+                                break;
+                            case '$ne':
+                                if (doc[key] !== value) return false;
+                                break;
+                            case '$in':
+                                if (value.includes(doc[key])) return false;
+                                break;
+                            case '$nin':
+                                if (!value.includes(doc[key])) return false;
+                                break;
+                            case '$regex':
+                                if (new RegExp(value).test(doc[key])) return false;
+                                break;
+                            default:
+                                throw new Error(`Unsupported operator: ${op}`);
+                        }
+                    }
+                } else {
+                    if (doc[key] === condition) return false;
+                }
+            }
+            return true;
+        });
+    
+        if (this.db.data[this.name].length !== initialLength) {
+            this.db._saveData();
+        }
+    
+        return { deletedCount: initialLength - this.db.data[this.name].length };
+    }
+    
     aggregate(pipeline) {
         let results = [...this.db.data[this.name]];
 
@@ -136,37 +263,34 @@ class Collection {
                 case '$sort':
                     results = _.orderBy(results, Object.keys(params), Object.values(params).map(v => (v > 0 ? 'asc' : 'desc')));
                     break;
-                    case '$group':
-    results = Object.values(_.groupBy(results, params._id)).map(group => {
-        const result = { _id: group[0][params._id] };
-        for (const [key, func] of Object.entries(params)) {
-            if (key === '_id') continue;
-            if (func.$sum) {
-
-                if (func.$sum === 1) {
-                    result[key] = group.length; 
-                } else {
-                    result[key] = _.sumBy(group, doc => doc[func.$sum]); 
-                }
-            }
-            if (func.$avg) {
-                result[key] = _.meanBy(group, func.$avg);
-            }
-            if (func.$min) {
-                result[key] = _.minBy(group, func.$min);
-            }
-            if (func.$max) {
-                result[key] = _.maxBy(group, func.$max);
-            }
-            if (func.$count) {
-                result[key] = group.length;
-            }
-        }
-        return result;
-    });
-    break;
-
-                    
+                case '$group':
+                    results = Object.values(_.groupBy(results, params._id)).map(group => {
+                        const result = { _id: group[0][params._id] };
+                        for (const [key, func] of Object.entries(params)) {
+                            if (key === '_id') continue;
+                            if (func.$sum) {
+                                if (func.$sum === 1) {
+                                    result[key] = group.length; 
+                                } else {
+                                    result[key] = _.sumBy(group, doc => doc[func.$sum]); 
+                                }
+                            }
+                            if (func.$avg) {
+                                result[key] = _.meanBy(group, func.$avg);
+                            }
+                            if (func.$min) {
+                                result[key] = _.minBy(group, func.$min);
+                            }
+                            if (func.$max) {
+                                result[key] = _.maxBy(group, func.$max);
+                            }
+                            if (func.$count) {
+                                result[key] = group.length;
+                            }
+                        }
+                        return result;
+                    });
+                    break;
                 case '$limit':
                     results = results.slice(0, params);
                     break;
@@ -211,7 +335,6 @@ class Collection {
     }
 }
 
-
 class Model {
     constructor(collection, schema) {
         this.collection = collection;
@@ -224,7 +347,7 @@ class Model {
     }
 
     validateUpdate(update) {
-        const updateSchema = this.schema.tailor('update'); // Allow partial updates
+        const updateSchema = this.schema.tailor('update');
         const { error } = updateSchema.validate(update);
         if (error) throw new Error(`Validation failed: ${error.message}`);
     }
@@ -235,6 +358,9 @@ class Model {
     }
 
     update(query, update, options = { runValidators: true }) {
+        if (options.runValidators) {
+            this.validateUpdate(update);
+        }
         return this.collection.update(query, update, options);
     }
 
